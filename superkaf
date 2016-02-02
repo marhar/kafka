@@ -1,0 +1,61 @@
+#!/bin/bash
+
+KAFDIR=$HOME/kaf/inst/kafka_2.11-0.9.0.0
+
+help="
+superkaf -- start, stap, and query local kafka server
+usage:  superkaf start
+        superkaf stop
+        superkaf status
+
+handy commands:
+
+$KAFDIR/bin/kafka-topics.sh --zookeeper localhost:2181 --list
+$KAFDIR/bin/kafka-topics.sh --zookeeper localhost --create --topic foo --replication-factor 1 --partitions 1
+$KAFDIR/bin/kafka-console-producer.sh --topic test --broker-list localhost:9091
+$KAFDIR/bin/kafka-console-producer.sh --broker-list localhost:9091 --topic foo
+
+$KAFDIR/bin/kafka-console-consumer.sh --new-consumer --bootstrap-server localhost:9092 --topic foo
+$KAFDIR/bin/kafka-console-consumer.sh --zookeeper localhost --topic foo
+
+"
+
+function ntab() {
+  TAB_NAME=$1
+  COMMAND=$2
+  osascript \
+    -e "tell application \"Terminal\"" \
+    -e "tell application \"System Events\" to keystroke \"t\" using {command down}" \
+    -e "do script \"printf '\\\e]1;$TAB_NAME\\\a'; $COMMAND\" in front window" \
+    -e "end tell" > /dev/null
+}
+
+if   test .$1 = .start;  then
+    echo starting zookeeper...
+    ntab zookeeper "$KAFDIR/bin/zookeeper-server-start.sh $KAFDIR/config/zookeeper.properties; echo DONE, PRESS ENTER;read a;exit"
+    sleep 10
+    echo starting kafka...
+    ntab kafka "$KAFDIR/bin/kafka-server-start.sh $KAFDIR/config/server.properties; echo DONE, PRESS ENTER;read a;exit"
+    $KAFDIR/bin/kafka-topics.sh --zookeeper localhost:2181 --list
+elif test .$1 = .stop;   then
+    echo stopping...
+    $KAFDIR/bin/kafka-server-stop.sh $KAFDIR/config/server.properties
+    $KAFDIR/bin/zookeeper-server-stop.sh $KAFDIR/config/zookeeper.properties
+elif test .$1 = .status; then
+    # hmm whats the best way to do this?
+    ps auxww|grep -v grep|egrep 'kafka.Kafka|org.apache.zookeeper.server.quorum.QuorumPeerMain'
+    ps auxww|grep -v grep|egrep 'kafka.Kafka|org.apache.zookeeper.server.quorum.QuorumPeerMain'|wc -l
+    $KAFDIR/bin/kafka-topics.sh --zookeeper localhost:2181 --list
+elif test .$1 = .help; then
+    cat <<.
+    $help
+.
+    exit 0
+else
+    cat <<.
+    $help
+.
+    exit 1
+fi
+
+

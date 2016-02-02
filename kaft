@@ -1,0 +1,91 @@
+#!/bin/bash
+help="
+kaft -- kafka tool
+
+usage: kaft list args... -- list topics
+       kaft consume <topic> args...
+       kaft produce <topic> args...
+       kaft help
+
+docs and config:
+
+    https://github.com/marhar/kafka
+
+experimental: send feedback to mark!
+" 
+
+help () {
+    cat <<.
+$help
+.
+    echo KAFT_INSTANCE=$KAFT_INSTANCE
+    echo ZOOKEEPER=$ZOOKEEPER
+    echo KAFKA_SERVER=$KAFKA_SERVER
+}
+
+# see if we have a kafka installation on the path.  for now
+# we support confluent kafka
+
+inst1=`which kafka-topics.sh`
+inst2=`which kafka-topics`
+
+if test . = .$inst2; then
+    echo please add confluent kafka bin directory on your path 1>&2
+    echo http://www.confluent.io
+    exit 1
+fi
+
+if test . = .$KAFT_INSTANCE; then
+    echo 'need to set $KAFT_INSTANCE'
+    echo 'put config files in $HOME/.kaft'
+    ls -l $HOME/.kaft
+    exit 1
+fi
+
+CONFIG=$HOME/.kaft/$KAFT_INSTANCE
+
+if ! test -f $CONFIG; then
+    echo cannot find config file: $CONFIG
+    exit 1
+fi
+
+. $HOME/.kaft/$KAFT_INSTANCE
+
+#---------------------------------------------------------------
+if test .$1 = .list; then
+    shift
+    kafka-topics --zookeeper $ZOOKEEPER --list
+#---------------------------------------------------------------
+elif test .$1 = .describe; then
+    shift
+    topic=$1
+    shift
+    echo describing: $topic
+    kafka-topics --zookeeper $ZOOKEEPER --topic $topic --describe $*
+#---------------------------------------------------------------
+elif test .$1 = .produce; then
+    shift
+    topic=$1
+    shift
+    echo producing: $topic
+    kafka-console-producer --broker-list $KAFKA_SERVER --topic $topic $*
+#---------------------------------------------------------------
+elif test .$1 = .consume; then
+    shift
+    topic=$1
+    shift
+    echo consuming: $topic
+    kafka-console-consumer --new-consumer --bootstrap-server $KAFKA_SERVER --topic $topic $*
+#---------------------------------------------------------------
+elif test .$1 = .help; then
+    help
+
+#---------------------------------------------------------------
+elif test .$1 = .; then
+    help
+
+#---------------------------------------------------------------
+else
+    echo bad command, try $0 help
+    exit 1
+fi
