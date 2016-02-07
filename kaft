@@ -54,27 +54,28 @@ fi
 #---------------------------------------------------------------
 if test .$1 = .list; then
     shift
+    echo 1>&2 kafka-topics --zookeeper $ZOOKEEPER --list
     kafka-topics --zookeeper $ZOOKEEPER --list
 #---------------------------------------------------------------
 elif test .$1 = .describe; then
     shift
     topic=$1
     shift
-    echo describing: $topic
+    echo 1>&2 kafka-topics --zookeeper $ZOOKEEPER --topic $topic --describe $*
     kafka-topics --zookeeper $ZOOKEEPER --topic $topic --describe $*
 #---------------------------------------------------------------
 elif test .$1 = .produce; then
     shift
     topic=$1
     shift
-    echo producing: $topic
+    echo 1>&2 kafka-console-producer --broker-list $KAFKA_SERVER --topic $topic $*
     kafka-console-producer --broker-list $KAFKA_SERVER --topic $topic $*
 #---------------------------------------------------------------
 elif test .$1 = .consume; then
     shift
     topic=$1
     shift
-    echo consuming: $topic
+    echo 1>&2 kafka-console-consumer --new-consumer --bootstrap-server $KAFKA_SERVER --topic $topic $*
     kafka-console-consumer --new-consumer --bootstrap-server $KAFKA_SERVER --topic $topic $*
 #---------------------------------------------------------------
 elif test .$1 = .help; then
